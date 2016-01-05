@@ -1,0 +1,63 @@
+comparisons/tests/whatever all store something in an output
+copy
+add (and fadd)
+sub (and fsub)
+mult (and fmult)
+div (and fdiv)
+mod (and fmod)
+shift
+srl
+srr
+sra
+
+copyconvfi
+no jump, use standard add, mov, sub, etc instructions to modify IP (IP is incremented by 1 every cycle before op, so take that into account)
+IP is the number of instructions... aka pointer into memory * 4
+instructions must be aligned to 4
+//gotta figure out func calling?
+to signify program halt, set IP to -1 (so that when it gets added by 1, it is then 0)
+
+fuck registers, memory it is
+first 1k or something can be "considered" registers
+first 1 "byte" is the only mandated register, IP
+
+0copy
+1add
+2sub
+3mult
+4div
+5mod
+6and
+7or
+8xor
+9not
+10!ot
+12sl
+13sr
+14sa
+15tg
+16te
+
+Instructions
+Each instructio is made up of 4 components, each one byte
+byte size is determined by arch. 16 bit bytes, 32 bit bytes, 11 bit bytes, fuck you i say i can do it
+usually is OP, (input) address, (input or size or unused) address, (output)address
+
+Each one is one 
+
+capital means its not the data at address, but the data at the memory pointed to by address
+
+little endian
+Op is made up of (two) parts , may change
+first 3 bits (&7) is a bitfield specifying weather or not the address is where the stuff is held or if the address is a pointer
+
+copy in size out
+add a b out
+same for sub mult div mod or and xor not and the float versions
+shift in shiftnum out
+
+
+
+
+copyconvfi reads in floats and converts to integers, otherwise acts as copy
+copyconvif reads in ints and converts to floats, otherwise acts as copy

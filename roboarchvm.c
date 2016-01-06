@@ -26,7 +26,7 @@ void getp(const int op, const int a, const int b, const int c){
 	else outputp = c;
 }
 void doop(const int op){
-	switch((op & ~7) >> 3){
+	switch((unsigned int) op >> 3){
 		case 0://copy
 			memcpy(((int*)mem) + outputp, ((int*)mem) + inputap, ((int *)mem)[inputbp]*4);
 		break;
@@ -57,7 +57,7 @@ void doop(const int op){
 		case 9:	//not
 			((int*)mem)[outputp] = ~((int*)mem)[inputap];
 		break;
-		case 10://!ot
+		case 10://bnot
 			((int*)mem)[outputp] = !((int*)mem)[inputap];
 		break;
 		case 11://sl

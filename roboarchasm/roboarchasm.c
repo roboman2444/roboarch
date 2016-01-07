@@ -13,6 +13,109 @@ int datasize = 0;
 int maxput = 0;
 
 
+typedef struct label_s {
+	char * name;
+	int type;
+	int pos;
+	struct label_s * uses;
+} label_t;
+
+label_t * labeltable = 0;
+int labeltablesize = 0;
+
+int deletelabel(label_t * l){
+	int cnt;
+	label_t *n;
+	for(n = l->uses, cnt = 0; n; cnt++){
+		l = n;
+		n = l->uses;
+		free(l);
+	}
+	return cnt;
+}
+int addlabel(char * name, int pos){
+	int len = strlen(name);
+	if(ISALPHANUM(name[len-1]))len++; //uhhh should have a : at the end, but idk
+	char * newname = malloc(len);
+	memcpy(newname, name, len);
+	newname[len-1] = 0;
+	//search for preexisting
+	//todo use a hashmap but i am laze
+	int i;
+	for(i = 0; i< labeltablesize; i++) if(string_testEqual(newname, labeltable[i].name)) break;
+	label_t *l;
+	//got to the end without finding one
+	if(i == labeltablesize){ //doesnt exist yet, add it
+		labeltablesize++;
+		labeltable = realloc(labeltable, labeltablesize * sizeof(label_t));
+		label_t *l = &labeltable[i];
+		l->name = newname;
+		l->type = 1;
+		l->pos = pos;
+		l->uses = 0;
+		return TRUE;
+	} else {	//already exists in
+		if(newname)free(newname);
+		l = &labeltable[i];
+		if(!l->type){ //has not been defined yet
+			label_t *n = malloc(sizeof(label_t));
+			memcpy(n, l, sizeof(label_t));
+			l->uses = n;
+			l->type = 1;
+			l->pos = pos;
+			return TRUE;
+		}
+	}
+	return FALSE;
+}
+
+
+int addlabelref(char * name, int pos){
+	int len = strlen(name);
+	if(ISALPHANUM(name[len-1]))len++; //uhhh shouldnt have a : at the end, but idk
+	char * newname = malloc(len);
+	memcpy(newname, name, len);
+	newname[len-1] = 0;
+
+	//search for preexisting
+	//todo use a hashmap but i am laze
+	int i;
+	for(i = 0; i< labeltablesize; i++) if(string_testEqual(newname, labeltable[i].name)) break;
+	label_t *l;
+	//got to the end without finding one
+	if(i == labeltablesize){ //doesnt exist yet, add it
+		labeltablesize++;
+		labeltable = realloc(labeltable, labeltablesize * sizeof(label_t));
+		label_t *l = &labeltable[i];
+		l->name = newname;
+		l->type = 0;
+		l->pos = pos;
+		l->uses = 0;
+		return FALSE;
+	} else {	//already exists in
+		if(newname)free(newname);
+		l = &labeltable[i];
+		label_t *n = malloc(sizeof(label_t));
+		if(!l->type){ //has not been defined yet
+			memcpy(n, l, sizeof(label_t));
+			l->uses = n;
+			l->type = 0;
+			l->pos = pos;
+			return FALSE;
+		} else { //has already been defined
+			n->name = l->name;
+			n->type = 0;
+			n->pos = pos;
+			n->uses = l->uses;
+			l->uses = n;
+			return TRUE;
+		}
+	}
+	return FALSE;
+}
+
+
+
 void putdata(int in, int place){
 	if(place >= datasize){
 		datasize = place +16;
@@ -50,11 +153,26 @@ int parseword(char * word){
 	int i;
 	for(i = 0; i < sz; i++)tword[i] = word[i];
 	tword[sz] = 0;
+
 	int writeres = writeop(word);
 	if(writeres){
 		printf("parsed %s as the op %i or 0x%08x, loc %i\n", tword, data[curplace-1], data[curplace-1], curplace-1);
 		return writeres;
 	}
+
+	if(ISALPHA(tword[0])){
+		if(tword[sz-1] == ':'){
+			if(addlabel(tword, curplace)) printf("parsed %s as label to %i or 0x%08x\n", tword, curplace, curplace);
+			else printf("error, label %s already exists\n", tword);
+			return sz;
+		}
+		if(addlabelref(tword, curplace)) printf("parsed %s as label ref\n", tword);
+		else printf("parsed %s as label ref, label does not already exist\n", tword);
+		putdata(-1, curplace);
+		curplace++;
+		return sz;
+	}
+
 	errno = 1;
 	if(string_testEqualN(word,"0x", 2)){ //hex value
 		writeres = strtol(word, NULL, 0);
@@ -79,6 +197,32 @@ int parseword(char * word){
 	return sz;
 }
 
+
+
+
+int postlabels(void){
+	int i;
+	for(i = 0; i < labeltablesize; i++){
+		label_t *l = &labeltable[i];
+		label_t *n;
+		if(!l->type){
+			printf("ERROR: label %s undefined. Uses:\n", l->name);
+			for(n = l; n; n=n->uses){
+				printf("\t %i or 0x%08x\n", n->pos, n->pos);
+			}
+		} else {
+			printf("label %s defined at %i or 0x%08x. Uses:\n", l->name, l->pos, l->pos);
+			for(n = l->uses; n; n=n->uses){
+				printf("\t %i or 0x%08x\n", n->pos, n->pos);
+				putdata(l->pos, n->pos);
+			}
+		}
+		if(l->uses)deletelabel(l->uses);
+		if(l->name)free(l->name);
+	}
+	return i;
+}
+
 char * indata = 0;
 size_t insize = 0;
 int main(int argc, char ** argv){
@@ -96,6 +240,7 @@ int main(int argc, char ** argv){
 		for(;!ISWHITESPACE(*curln); curln++);
 		for(;*curln && ISWHITESPACE(*curln); curln++);
 	}
+	postlabels();
 
 	f = fopen(argv[2], "wb");
 	fwrite(data, (maxput+1) * sizeof(int), 1, f);
@@ -106,5 +251,6 @@ int main(int argc, char ** argv){
 	if(indata) free(indata);
 	if(data)free(data);
 	if(tword)free(tword);
+	if(labeltable) free(labeltable);
 	return FALSE;
 }

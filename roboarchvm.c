@@ -2,6 +2,8 @@
 #include <stdlib.h>
 #include <string.h> // for memcpy which is essential for copy
 
+//#define DEBUGMODE
+
 #define TRUE 1
 #define FALSE 0
 
@@ -81,11 +83,15 @@ void doop(const int op){
 
 void executionloop(void){
 	int ip;
-	for(;(ip = ((int*)mem)[0])*4; ((int*)mem)[0]++){
+	for(;(ip = ((int*)mem)[0]); ((int*)mem)[0]+=4){
 		int op = ((int*)mem)[ip];
 		int a = ((int*)mem)[ip+1];
 		int b = ((int*)mem)[ip+2];
 		int c = ((int*)mem)[ip+3];
+		#ifdef DEBUGMODE
+			printf("%i with opcode %i or %i, %i, %i, %i\n", ip, op, op >> 3, a, b, c);
+		#endif
+
 		getp(op, a, b, c);
 		doop(op);
 	}
@@ -117,11 +123,11 @@ int main(int argc, char ** argv){
 	if(f){
 		//find end of mem
 		int i;
-		for(i = memsize -1; i >= 0 && !mem[i]; i--);
+		for(i = (memsize-1)/4; i >= 0 && !((int*)mem)[i]; i--);
 		i++;
 		if(i){
-			printf("dumping %i bytes to file %s\n", i, argv[3]);
-			fwrite(mem, i, 1, f);
+			printf("dumping %i bytes to file %s\n", i*4, argv[3]);
+			fwrite(mem, i*4, 1, f);
 		} else printf("no bytes to write\n");
 	}
 	if(mem) free(mem); mem = 0;

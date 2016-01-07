@@ -131,8 +131,8 @@ int writeop(char * word){
 	int opcode;
 	for(opcode = 0; ops[opcode]; opcode++) if(string_testEqualWFCI(ops[opcode], word)) break;
 	if(!ops[opcode]) return FALSE;
-	opcode = opcode << 3;
 	int bmp = strlen(ops[opcode]);
+	opcode = opcode << 3;
 	int i;
 	for(i = 0; i < 3 && !ISWHITESPACE(word[bmp + i]); i++){
 		if(ISUPPER(word[bmp+i])) opcode = opcode | 1<<i;		//will change later
@@ -144,6 +144,11 @@ int writeop(char * word){
 char * tword = 0;
 unsigned int twordlen = 0;
 int parseword(char * word){
+	if(string_testEqualN(word, "//", 2)){ // check if comment
+		int cnt;
+		for(cnt = 0;word[cnt] && word[cnt] != '\n'; cnt++);
+		return cnt;
+	}
 	int sz = string_wordLength(word);
 	if(sz >= twordlen){
 		twordlen = sz+1;
@@ -230,8 +235,9 @@ int main(int argc, char ** argv){
 	fseek(f, 0, SEEK_END);
 	insize = ftell(f);
 	rewind(f);
-	indata = malloc(insize);
+	indata = malloc(insize+1);
 	fread(indata, 1, insize, f);
+	indata[insize] = 0;
 	fclose(f);
 	char * curln = indata;
 	while(*curln){

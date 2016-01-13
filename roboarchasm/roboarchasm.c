@@ -147,7 +147,12 @@ int parseword(char * word){
 	if(string_testEqualN(word, "//", 2)){ // check if comment
 		int cnt;
 		for(cnt = 0;word[cnt] && word[cnt] != '\n'; cnt++);
-		return cnt;
+		return cnt+0;
+	}
+	if(string_testEqualN(word, "/*", 2)){ // */ check if longcomment
+		int cnt;
+		for(cnt = 0; word[cnt] && !string_testEqualN(word + cnt, "*/", 2); cnt++);
+		return cnt+1;
 	}
 	int sz = string_wordLength(word);
 	if(sz >= twordlen){

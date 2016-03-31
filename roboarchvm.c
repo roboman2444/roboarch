@@ -2,7 +2,7 @@
 #include <stdlib.h>
 #include <string.h> // for memcpy which is essential for copy
 
-//#define DEBUGMODE
+#define DEBUGMODE
 
 #define TRUE 1
 #define FALSE 0
@@ -33,7 +33,15 @@ void doop(const int op){
 			memcpy(((int*)mem) + outputp, ((int*)mem) + inputap, ((int *)mem)[inputbp]*4);
 		break;
 		case 1:	//add
-			((int*)mem)[outputp] = ((int*)mem)[inputap] + ((int*)mem)[inputbp];
+			#ifdef DEBUGMODE
+				{
+				int t  = ((int*)mem)[inputap] + ((int*)mem)[inputbp];
+				printf("writing %i to 0x%x\n",t, mem[outputp]);
+				((int*)mem)[outputp] = t;
+				}
+			#else
+				((int*)mem)[outputp] = ((int*)mem)[inputap] + ((int*)mem)[inputbp];
+			#endif
 		break;
 		case 2:	//sub
 			((int*)mem)[outputp] = ((int*)mem)[inputap] - ((int*)mem)[inputbp];

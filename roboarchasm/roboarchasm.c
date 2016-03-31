@@ -20,8 +20,19 @@ typedef struct label_s {
 	struct label_s * uses;
 } label_t;
 
+
 label_t * labeltable = 0;
 int labeltablesize = 0;
+
+int writelabels(label_t *ls, size_t size){
+	int i;
+	for(i = 0; i < size; i++){
+		label_t *l = labeltable+i;
+		if(!l->type) continue;
+		printf("%s: %i\n", l->name, l->pos);
+	}
+	return i;
+}
 
 int deletelabel(label_t * l){
 	int cnt;
@@ -251,6 +262,7 @@ int main(int argc, char ** argv){
 		for(;!ISWHITESPACE(*curln); curln++);
 		for(;*curln && ISWHITESPACE(*curln); curln++);
 	}
+	writelabels(labeltable, labeltablesize);
 	postlabels();
 
 	f = fopen(argv[2], "wb");
